@@ -1,15 +1,17 @@
 package rest
 
 import (
-    "encoding/json"
-    "encoding/xml"
-    "image"
-    "image/png"
-    "image/jpeg"
-    
-    "net/http"
-    
-    "golang.org/x/net/context"
+	"encoding/json"
+	"encoding/xml"
+	"errors"
+	"fmt"
+	"image"
+	"image/jpeg"
+	"image/png"
+
+	"net/http"
+
+	"golang.org/x/net/context"
 )
 
 // Text writes the string to the HTTP connection as text/plain content type
@@ -24,6 +26,18 @@ func Text(ctx context.Context, code int, str string) error {
 // Error writes the error string as the HTTP response
 func Error(ctx context.Context, code int, err error) error {
 	return Text(ctx, code, err.Error())
+}
+
+// Fatal outputs the same as Error, but returns the error so as to stop subsequent processing
+func Fatal(ctx context.Context, code int, errMsg interface{}) (err error) {
+	switch errMsg.(type) {
+	case error:
+		err = errMsg.(error)
+	default:
+		err = errors.New(fmt.Sprintf("%v", errMsg))
+	}
+	Error(ctx, code, err)
+	return err
 }
 
 // Status writes the HTTP response code with the default status text for that code
@@ -122,4 +136,3 @@ func Font(ctx context.Context, b []byte) error {
 func Unauthorized(ctx context.Context) error {
 	return Status(ctx, http.StatusUnauthorized)
 }
-

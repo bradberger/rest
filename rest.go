@@ -18,6 +18,19 @@ import (
 // The returned interface is written to the response, unless an error is returned.
 type AppHandler func(ctx context.Context) error
 
+// Handler is a chainable set of AppHandler middleware funcs
+func Handler(fn ...AppHandler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ctx := initRequest(w, r)
+		for i := range fn {
+			if err := fn[i](ctx); err != nil {
+				// TODO better handling of errors here, including checking GetCode(ctx)
+				return
+			}
+		}
+	})
+}
+
 // Decode decodes the http request body in JSON format into the dst variable.
 func Decode(ctx context.Context, dst interface{}) error {
 	b := ctx.Value(ContextKeyRequestBody)
@@ -25,6 +38,19 @@ func Decode(ctx context.Context, dst interface{}) error {
 		return errors.New("no request body")
 	}
 	return json.Unmarshal(b.([]byte), dst)
+}
+
+// Body returns the body of the request as a byte slice
+func Body(ctx context.Context) []byte {
+	b := ctx.Value(ContextKeyRequestBody).([]byte)
+	if b == nil {
+		return []byte{}
+	}
+	return b
+}
+
+func BodyString(ctx context.Context) string {
+	return string(Body(ctx))
 }
 
 // FormValue returns the form value (or mux.Vars value) from the request
@@ -87,7 +113,6 @@ func setVars(ctx context.Context) (context.Context, error) {
 }
 
 func setBody(ctx context.Context) (context.Context, error) {
-
 	r := Request(ctx)
 	bodyBytes, err := ioutil.ReadAll(r.Body)
 	defer r.Body.Close()
@@ -102,66 +127,29 @@ func setWriter(ctx context.Context, w http.ResponseWriter) context.Context {
 }
 
 // initRequest returns a context with the user and other context variables set
-func initRequest(w http.ResponseWriter, r *http.Request) (ctx context.Context, err error) {
+func initRequest(w http.ResponseWriter, r *http.Request) context.Context {
 
-	ctx = appengine.NewContext(r)
+	ctx := appengine.NewContext(r)
 	ctx = setRequest(ctx, r)
 	ctx = setWriter(ctx, w)
 
-	// If custom namespace handler set then execute it here
-	if Namespace != nil {
-		ns, err := Namespace(ctx)
-		if err != nil {
-			return ctx, err
-		}
-		ctx, err = appengine.Namespace(ctx, ns)
-		if err != nil {
-			return ctx, err
-		}
-	}
-
-	if ctx, err = setVars(ctx); err != nil {
-		return
-	}
-	if ctx, err = setBody(ctx); err != nil {
-		return
-	}
-	return
+	// TODO Figure out how to handle errors here
+	ctx, _ = setNamespace(ctx)
+	ctx, _ = setVars(ctx)
+	ctx, _ = setBody(ctx)
+	return ctx
 }
 
-// processRequest calls the controller function. If there's an error, then return a 500 template or a basic message.
-func processRequest(ctx context.Context, fn func(ctx context.Context) error) {
-
-	err := fn(ctx)
-	if err == nil {
-		return
+// setNamespace sets a custom namespace if the `Namespace` variable is not nil
+func setNamespace(ctx context.Context) (context.Context, error) {
+	if Namespace == nil {
+		return ctx, nil
 	}
-
-	OnError(ctx, GetErrorCode(ctx, err), err)
-}
-
-// ServeHTTP provides authorization and write wrappers for http controllers and responses
-func (fn AppHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-
-	var ctx context.Context
-	var err error
-
-	// Catch panics with the custom handler, if it's not nil
-	defer func() {
-		if OnPanic != nil {
-			if ctx == nil {
-				ctx = appengine.NewContext(r)
-			}
-			defer OnPanic(ctx)
-		}
-	}()
-
-	ctx, err = initRequest(w, r)
+	ns, err := Namespace(ctx)
 	if err != nil {
-		Criticalf(ctx, "Error bootstrapping request: %v", err)
+		return ctx, err
 	}
-
-	processRequest(ctx, fn)
+	return appengine.Namespace(ctx, ns)
 }
 
 func New() *mux.Router {

@@ -16,6 +16,10 @@ var Namespace func(ctx context.Context) (string, error) = func(ctx context.Conte
 	return "", nil
 }
 
+var OnUnauthorized http.HandlerFunc = func(w http.ResponseWriter, r *http.Request) {
+	http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
+}
+
 // OnError is a custom error handler definition. By default it simple returns an http.Error()
 // with the given code and status text.
 var OnError func(ctx context.Context, code int, err error) = func(ctx context.Context, code int, err error) {

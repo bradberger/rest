@@ -27,8 +27,15 @@ var OnError func(ctx context.Context, code int, err error) = func(ctx context.Co
 	http.Error(ResponseWriter(ctx), err.Error(), code)
 }
 
-// GetErrorCode allows customizing of the http.StatusCode for any given error
+// GetErrorCode allows customizing of the http.StatusCode for any given error. If the code has already
+// been set with SetCode() then it will not be overwritten by this function.
 var GetErrorCode func(ctx context.Context, err error) int = func(ctx context.Context, err error) (code int) {
+
+	exist := GetCode(ctx)
+	if exist != http.StatusOK {
+		return exist
+	}
+
 	switch {
 	case err == datastore.ErrNoSuchEntity:
 		code = http.StatusNotFound

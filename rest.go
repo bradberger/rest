@@ -24,7 +24,7 @@ func Handler(fn ...AppHandler) http.Handler {
 		ctx := initRequest(w, r)
 		for i := range fn {
 			if err := fn[i](ctx); err != nil {
-				// TODO better handling of errors here, including checking GetCode(ctx)
+				OnError(ctx, GetErrorCode(ctx, err), err)
 				return
 			}
 		}

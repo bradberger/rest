@@ -36,6 +36,11 @@ var GetErrorCode func(ctx context.Context, err error) int = func(ctx context.Con
 		return exist
 	}
 
+	switch err.(type) {
+	case StatusCode:
+		return err.(StatusCode).Code()
+	}
+
 	switch {
 	case err == datastore.ErrNoSuchEntity:
 		code = http.StatusNotFound

@@ -3,8 +3,6 @@ package rest
 import (
 	"encoding/json"
 	"encoding/xml"
-	"errors"
-	"fmt"
 	"image"
 	"image/jpeg"
 	"image/png"
@@ -26,18 +24,6 @@ func Text(ctx context.Context, code int, str string) error {
 // Error writes the error string as the HTTP response
 func Error(ctx context.Context, code int, err error) error {
 	return Text(ctx, code, err.Error())
-}
-
-// Fatal outputs the same as Error, but returns the error so as to stop subsequent processing
-func Fatal(ctx context.Context, code int, errMsg interface{}) (err error) {
-	switch errMsg.(type) {
-	case error:
-		err = errMsg.(error)
-	default:
-		err = errors.New(fmt.Sprintf("%v", errMsg))
-	}
-	Error(ctx, code, err)
-	return err
 }
 
 // Status writes the HTTP response code with the default status text for that code

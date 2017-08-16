@@ -2,9 +2,11 @@
 package rest
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"io/ioutil"
+	"mime/multipart"
 	"net/http"
 
 	"golang.org/x/net/context"
@@ -87,6 +89,11 @@ func Hostname(ctx context.Context) (string, error) {
 	return appengine.ModuleHostname(ctx, "", "", "")
 }
 
+// FormFile matches the "net/http".Request.FormFile api
+func FormFile(ctx context.Context, key string) (multipart.File, *multipart.FileHeader, error) {
+	return Request(ctx).FormFile(key)
+}
+
 func setRequest(ctx context.Context, r *http.Request) context.Context {
 	return context.WithValue(ctx, ContextKeyRequest, r)
 }
@@ -115,7 +122,9 @@ func setVars(ctx context.Context) (context.Context, error) {
 func setBody(ctx context.Context) (context.Context, error) {
 	r := Request(ctx)
 	bodyBytes, err := ioutil.ReadAll(r.Body)
-	defer r.Body.Close()
+	r.Body.Close()
+	// Reset the body so it can be read again.
+	r.Body = ioutil.NopCloser(bytes.NewBuffer(bodyBytes))
 	if err != nil {
 		return ctx, err
 	}

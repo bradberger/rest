@@ -19,6 +19,7 @@ var (
 	ContextKeyResponseCode   ContextKey = "response.code"
 	ContextKeyInitialized    ContextKey = "initialized"
 	ContextKeyResponseBody   ContextKey = "response.body"
+	ContextKeyEnvironment    ContextKey = "environment"
 )
 
 func SetCode(ctx context.Context, code int) context.Context {

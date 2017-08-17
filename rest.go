@@ -12,8 +12,6 @@ import (
 	"golang.org/x/net/context"
 
 	"github.com/gorilla/mux"
-
-	"google.golang.org/appengine"
 )
 
 // AppHandler is the wrapper for all HTTP requests. It provides a valid context, authorization information, and route parameters.
@@ -84,11 +82,6 @@ func Headers(ctx context.Context) http.Header {
 	return Request(ctx).Header
 }
 
-// Hostname returns the hostname of the current instance
-func Hostname(ctx context.Context) (string, error) {
-	return appengine.ModuleHostname(ctx, "", "", "")
-}
-
 // FormFile matches the "net/http".Request.FormFile api
 func FormFile(ctx context.Context, key string) (multipart.File, *multipart.FileHeader, error) {
 	return Request(ctx).FormFile(key)
@@ -138,7 +131,7 @@ func setWriter(ctx context.Context, w http.ResponseWriter) context.Context {
 // initRequest returns a context with the user and other context variables set
 func initRequest(w http.ResponseWriter, r *http.Request) context.Context {
 
-	ctx := appengine.NewContext(r)
+	ctx := getContext(r)
 	ctx = setRequest(ctx, r)
 	ctx = setWriter(ctx, w)
 
@@ -147,18 +140,6 @@ func initRequest(w http.ResponseWriter, r *http.Request) context.Context {
 	ctx, _ = setVars(ctx)
 	ctx, _ = setBody(ctx)
 	return ctx
-}
-
-// setNamespace sets a custom namespace if the `Namespace` variable is not nil
-func setNamespace(ctx context.Context) (context.Context, error) {
-	if Namespace == nil {
-		return ctx, nil
-	}
-	ns, err := Namespace(ctx)
-	if err != nil {
-		return ctx, err
-	}
-	return appengine.Namespace(ctx, ns)
 }
 
 func New() *mux.Router {

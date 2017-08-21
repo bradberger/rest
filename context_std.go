@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"strings"
 
-	"golang.org/x/net/context"
+	"context"
 )
 
 func getContext(r *http.Request) context.Context {

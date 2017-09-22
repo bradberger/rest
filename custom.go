@@ -3,12 +3,13 @@ package rest
 import (
 	"net/http"
 
-	"golang.org/x/net/context"
+	"github.com/bradberger/context"
+
 	"google.golang.org/appengine"
 	"google.golang.org/appengine/datastore"
 )
 
-// OnPanic, if defined, will handle
+// OnPanic when defined, will handle any panics from resulting funcs
 var OnPanic AppHandler
 
 // Namespace enables setting custom namespace
@@ -16,6 +17,7 @@ var Namespace func(ctx context.Context) (string, error) = func(ctx context.Conte
 	return "", nil
 }
 
+// OnUnauthorized handles the response for 401 responses
 var OnUnauthorized http.HandlerFunc = func(w http.ResponseWriter, r *http.Request) {
 	http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
 }

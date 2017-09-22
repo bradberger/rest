@@ -74,8 +74,10 @@ const (
 	StatusNetworkAuthenticationRequired StatusCode = 511 // RFC 6585, 6
 )
 
+// StatusCode is an HTTP status code, with associated error messages
 type StatusCode int
 
+// Code returns the http status code
 func (s StatusCode) Code() int {
 	return int(s)
 }
@@ -85,33 +87,40 @@ func (s StatusCode) String() string {
 }
 
 func (s StatusCode) Error() string {
-    return s.String()
+	return s.String()
 }
 
+// ContentType returns the http.Response content-type header
 func (s StatusCode) ContentType() string {
-    return MIMETextPlain.String()
+	return MIMETextPlain.String()
 }
 
+// Body returns the http.Response body string
 func (s StatusCode) Body() string {
-    return s.String()
+	return s.String()
 }
 
+// ResponseCode defines an interface which returns an HTTP response code
 type ResponseCode interface {
 	Code() int
 }
 
+// ResponseReader defines an interface with returns a response body of a io.Readoer
 type ResponseReader interface {
 	Body() io.Reader
 }
 
+// ResponseString defines an interface with returns a response body of a string
 type ResponseString interface {
 	Body() string
 }
 
+// ResponseBytes defines an interface which returns a Body() of a byte slice
 type ResponseBytes interface {
 	Body() []byte
 }
 
+// ResponseContentType defines an interface which returns a content-type
 type ResponseContentType interface {
 	ContentType() string
 }

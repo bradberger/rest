@@ -3,7 +3,7 @@
 package rest
 
 import (
-	"golang.org/x/net/context"
+	"github.com/bradberger/context"
 
 	"google.golang.org/appengine/log"
 )

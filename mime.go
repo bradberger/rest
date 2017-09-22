@@ -65,6 +65,7 @@ const (
 	HeaderXCSRFToken              = "X-CSRF-Token"
 )
 
+// MIME type definitions
 const (
 	MIMEApplicationJSON                  MIME = "application/json"
 	MIMEApplicationJSONCharsetUTF8       MIME = MIMEApplicationJSON + "; " + charsetUTF8
@@ -85,8 +86,10 @@ const (
 	MIMEOctetStream                      MIME = "application/octet-stream"
 )
 
+// MIME is a string which implements the ContentType interface
 type MIME string
 
+// ContentType returns the content-type header for the mime type
 func (m MIME) ContentType() string {
 	return string(m)
 }

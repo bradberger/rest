@@ -9,9 +9,21 @@ import (
 	"mime/multipart"
 	"net/http"
 
-	"golang.org/x/net/context"
-
+	"github.com/bradberger/context"
 	"github.com/gorilla/mux"
+)
+
+// Context key standardized definitions
+var (
+	ContextKeyNamepace       context.Key = "namespace"
+	ContextKeyRequestBody    context.Key = "request.body"
+	ContextKeyRequestVars    context.Key = "request.vars"
+	ContextKeyResponseWriter context.Key = "http.responsewriter"
+	ContextKeyRequest        context.Key = "request"
+	ContextKeyResponseCode   context.Key = "response.code"
+	ContextKeyInitialized    context.Key = "initialized"
+	ContextKeyResponseBody   context.Key = "response.body"
+	ContextKeyEnvironment    context.Key = "environment"
 )
 
 // AppHandler is the wrapper for all HTTP requests. It provides a valid context, authorization information, and route parameters.
@@ -49,6 +61,7 @@ func Body(ctx context.Context) []byte {
 	return b
 }
 
+// BodyString returns the body of the request as a string
 func BodyString(ctx context.Context) string {
 	return string(Body(ctx))
 }
@@ -82,13 +95,25 @@ func Headers(ctx context.Context) http.Header {
 	return Request(ctx).Header
 }
 
+// GetCode returns the http response code associated with the request
+func GetCode(ctx context.Context) int {
+	if v := ctx.Value(context.ContextKeyResponseCode); v != nil {
+		return v.(int)
+	}
+	return http.StatusOK
+}
+
 // FormFile matches the "net/http".Request.FormFile api
 func FormFile(ctx context.Context, key string) (multipart.File, *multipart.FileHeader, error) {
 	return Request(ctx).FormFile(key)
 }
 
 func setRequest(ctx context.Context, r *http.Request) context.Context {
-	return context.WithValue(ctx, ContextKeyRequest, r)
+	return setValue(ctx, ContextKeyRequest, r)
+}
+
+func setValue(ctx context.Context, key, val interface{}) context.Context {
+	return context.WithValue(ctx, key, val)
 }
 
 func setVars(ctx context.Context) (context.Context, error) {
@@ -108,7 +133,7 @@ func setVars(ctx context.Context) (context.Context, error) {
 		v[i] = mux.Vars(r)[i]
 	}
 
-	ctx = context.WithValue(ctx, ContextKeyRequestVars, v)
+	ctx = setValue(ctx, ContextKeyRequestVars, v)
 	return ctx, nil
 }
 
@@ -121,17 +146,17 @@ func setBody(ctx context.Context) (context.Context, error) {
 	if err != nil {
 		return ctx, err
 	}
-	return context.WithValue(ctx, ContextKeyRequestBody, bodyBytes), nil
+	return setValue(ctx, ContextKeyRequestBody, bodyBytes), nil
 }
 
 func setWriter(ctx context.Context, w http.ResponseWriter) context.Context {
-	return context.WithValue(ctx, ContextKeyResponseWriter, w)
+	return setValue(ctx, ContextKeyResponseWriter, w)
 }
 
 // initRequest returns a context with the user and other context variables set
 func initRequest(w http.ResponseWriter, r *http.Request) context.Context {
 
-	ctx := getContext(r)
+	ctx := context.NewContext(r)
 	ctx = setRequest(ctx, r)
 	ctx = setWriter(ctx, w)
 
@@ -142,6 +167,7 @@ func initRequest(w http.ResponseWriter, r *http.Request) context.Context {
 	return ctx
 }
 
+// New creates a new initialized router
 func New() *mux.Router {
 	r := mux.NewRouter()
 	r.KeepContext = true

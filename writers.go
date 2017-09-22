@@ -3,22 +3,23 @@ package rest
 import (
 	"encoding/json"
 	"encoding/xml"
+	"fmt"
 	"image"
 	"image/jpeg"
 	"image/png"
+	"io"
 
 	"net/http"
 
-	"golang.org/x/net/context"
+	"github.com/bradberger/context"
 )
 
 // Text writes the string to the HTTP connection as text/plain content type
-func Text(ctx context.Context, code int, str string) error {
+func Text(ctx context.Context, code int, str interface{}) error {
 	w := ResponseWriter(ctx)
 	w.Header().Set("Content-Type", "text/plain")
 	w.WriteHeader(code)
-	_, err := w.Write([]byte(str))
-	return err
+	return write(w, str)
 }
 
 // Error writes the error string as the HTTP response
@@ -38,25 +39,42 @@ func Redirect(ctx context.Context, urlStr string, code int) error {
 }
 
 // HTML writes the raw HTML to the HTTP connection
-func HTML(ctx context.Context, code int, html string) error {
+func HTML(ctx context.Context, code int, html interface{}) error {
 	w := ResponseWriter(ctx)
 	w.Header().Set("Content-Type", "text/html")
 	w.WriteHeader(code)
-	if _, err := w.Write([]byte(html)); err != nil {
-		return err
-	}
-	return nil
+	return write(w, html)
 }
 
 // CSS writes the raw CSS to the HTTP connection
-func CSS(ctx context.Context, code int, css string) error {
+func CSS(ctx context.Context, code int, css interface{}) error {
 	w := ResponseWriter(ctx)
 	w.Header().Set("Content-Type", "text/css")
 	w.WriteHeader(code)
-	if _, err := w.Write([]byte(css)); err != nil {
+	return write(w, css)
+}
+
+func write(w io.Writer, data interface{}) error {
+	switch data.(type) {
+	case io.Reader:
+		_, err := io.Copy(w, data.(io.Reader))
+		return err
+	case *string:
+		_, err := io.WriteString(w, *data.(*string))
+		return err
+	case string:
+		_, err := io.WriteString(w, data.(string))
+		return err
+	case *[]byte:
+		_, err := w.Write(*data.(*[]byte))
+		return err
+	case []byte:
+		_, err := w.Write(data.([]byte))
+		return err
+	default:
+		_, err := io.WriteString(w, fmt.Sprintf("%v", data))
 		return err
 	}
-	return nil
 }
 
 // JSON writes the encoded data to the HTTP connection
@@ -65,9 +83,8 @@ func JSON(ctx context.Context, code int, data interface{}) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(code)
 	switch data.(type) {
-	case []byte:
-		_, err := w.Write(data.([]byte))
-		return err
+	case io.Reader, *string, string, *[]byte, []byte:
+		return write(w, data)
 	default:
 		return json.NewEncoder(w).Encode(data)
 	}
@@ -78,10 +95,12 @@ func XML(ctx context.Context, code int, data interface{}) error {
 	w := ResponseWriter(ctx)
 	w.Header().Set("Content-Type", "text/xml; charset=utf-8")
 	w.WriteHeader(code)
-	if err := xml.NewEncoder(w).Encode(data); err != nil {
-		return err
+	switch data.(type) {
+	case io.Reader, *string, string, *[]byte, []byte:
+		return write(w, data)
+	default:
+		return xml.NewEncoder(w).Encode(data)
 	}
-	return nil
 }
 
 // PNG writes the image to the HTTP connection

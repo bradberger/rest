@@ -32,8 +32,3 @@ var Infof LogFunc = func(ctx context.Context, format string, args ...interface{}
 var Warningf LogFunc = func(ctx context.Context, format string, args ...interface{}) {
 	log.Warningf(ctx, format, args...)
 }
-
-// Fatalf is shorthand for the appeninge/log func with the same name, with the added advantage that it's a variable and can be overridden if needed
-var Fatalf LogFunc = func(ctx context.Context, format string, args ...interface{}) {
-	log.Fatalf(ctx, format, args...)
-}

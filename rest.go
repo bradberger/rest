@@ -33,7 +33,7 @@ type AppHandler func(ctx context.Context) error
 // Handler is a chainable set of AppHandler middleware funcs
 func Handler(fn ...AppHandler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		ctx := initRequest(w, r)
+		ctx := Init(w, r)
 		for i := range fn {
 			if err := fn[i](ctx); err != nil {
 				OnError(ctx, GetErrorCode(ctx, err), err)
@@ -153,8 +153,8 @@ func setWriter(ctx context.Context, w http.ResponseWriter) context.Context {
 	return setValue(ctx, ContextKeyResponseWriter, w)
 }
 
-// initRequest returns a context with the user and other context variables set
-func initRequest(w http.ResponseWriter, r *http.Request) context.Context {
+// Init returns a context with the reader, writer, and other context variables set
+func Init(w http.ResponseWriter, r *http.Request) context.Context {
 
 	ctx := context.NewContext(r)
 	ctx = setRequest(ctx, r)

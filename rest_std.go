@@ -9,9 +9,3 @@ import (
 func setNamespace(ctx context.Context) (context.Context, error) {
 	return ctx, nil
 }
-
-// NewTestContext returns a new context suitable for testing. Outside of appengine,
-// this is just a fresh background context
-func NewTestContext() (context.Context, func(), error) {
-	return context.Background(), func() {}, nil
-}
